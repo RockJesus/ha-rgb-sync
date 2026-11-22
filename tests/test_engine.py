@@ -121,3 +121,18 @@ async def test_unknown_device_is_ignored(engine):
 
 async def test_solid_effect_by_default(engine):
     assert engine.state("a").effect == EFFECT_SOLID
+
+
+async def test_frame_rate_reflects_tick_loop(engine):
+    import asyncio
+
+    from custom_components.rgb_sync.const import DEFAULT_FPS
+
+    for dev_id in ("a", "b"):
+        engine.state(dev_id).on = False
+    await engine.async_start()
+    try:
+        await asyncio.sleep(0.6)
+        assert 0 < engine.fps <= DEFAULT_FPS * 1.5
+    finally:
+        await engine.async_stop()

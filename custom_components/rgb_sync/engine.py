@@ -79,6 +79,7 @@ class SyncEngine:
         self._last_cue = 0.0
         self._last_probe = 0.0
         self._frame_count = 0
+        self._frame_times: list[float] = []
         self._closing = False
 
     # ------------------------------------------------------------------
@@ -438,8 +439,14 @@ class SyncEngine:
                 self._track(task)
 
             self._frame_count += 1
-            elapsed = time.monotonic() - started
-            self.fps = round(1.0 / elapsed, 1) if elapsed > 0 else 0.0
+            self._frame_times.append(started)
+            while self._frame_times and started - self._frame_times[0] > 3.0:
+                self._frame_times.pop(0)
+            if len(self._frame_times) > 1:
+                span = self._frame_times[-1] - self._frame_times[0]
+                self.fps = round((len(self._frame_times) - 1) / span, 1) if span > 0 else 0.0
+            else:
+                self.fps = 0.0
             if self._frame_count % 20 == 0:
                 self.async_notify()
             if time.monotonic() - self._last_probe > PROBE_INTERVAL:
