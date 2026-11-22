@@ -48,6 +48,10 @@ CONF_CHAR_UUID: Final = "char_uuid"
 CONF_POWER_ON_HEX: Final = "power_on_hex"
 CONF_POWER_OFF_HEX: Final = "power_off_hex"
 CONF_COLOR_TEMPLATE: Final = "color_template"
+CONF_ENTITY_ID: Final = "entity_id"
+CONF_TOPIC: Final = "topic"
+CONF_QOS: Final = "qos"
+CONF_RETAIN: Final = "retain"
 
 # ---------------------------------------------------------------------------
 # Protocols
@@ -55,7 +59,15 @@ CONF_COLOR_TEMPLATE: Final = "color_template"
 PROTOCOL_WLED: Final = "wled"
 PROTOCOL_NETWORK: Final = "network"
 PROTOCOL_BLE: Final = "ble"
-PROTOCOLS: Final = [PROTOCOL_WLED, PROTOCOL_NETWORK, PROTOCOL_BLE]
+PROTOCOL_MATTER: Final = "matter"
+PROTOCOL_MQTT: Final = "mqtt"
+PROTOCOLS: Final = [
+    PROTOCOL_WLED,
+    PROTOCOL_NETWORK,
+    PROTOCOL_BLE,
+    PROTOCOL_MATTER,
+    PROTOCOL_MQTT,
+]
 
 NET_HTTP: Final = "http"
 NET_TCP: Final = "tcp"
@@ -75,6 +87,13 @@ DEFAULT_COLOR_TEMPLATE: Final = "56{r:02x}{g:02x}{b:02x}00f0aa"
 
 DEFAULT_NET_BODY: Final = '{"on": {on}, "bri": {brightness}, "r": {r}, "g": {g}, "b": {b}, "hex": "{hex}"}'
 DEFAULT_NET_PATH: Final = "/color"
+
+DEFAULT_MQTT_QOS: Final = 0
+DEFAULT_MQTT_RETAIN: Final = False
+DEFAULT_MQTT_BODY: Final = (
+    '{"state": "{state}", "brightness": {brightness}, "'
+    '"color": {"r": {r}, "g": {g}, "b": {b}}'
+)
 
 # ---------------------------------------------------------------------------
 # Effects

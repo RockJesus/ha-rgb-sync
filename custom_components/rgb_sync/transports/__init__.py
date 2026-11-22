@@ -6,9 +6,18 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
-from ..const import PROTOCOL_BLE, PROTOCOL_NETWORK, PROTOCOL_WLED, NET_HTTP
+from ..const import (
+    NET_HTTP,
+    PROTOCOL_BLE,
+    PROTOCOL_MATTER,
+    PROTOCOL_MQTT,
+    PROTOCOL_NETWORK,
+    PROTOCOL_WLED,
+)
 from .base import BaseTransport, TransportError
 from .ble import BleTransport
+from .matter import MatterTransport
+from .mqtt import MqttTransport
 from .network import NetworkTransport
 from .wled import WledTransport
 
@@ -22,6 +31,10 @@ def create_transport(hass: HomeAssistant, device: dict[str, Any]) -> BaseTranspo
         return NetworkTransport(hass, device)
     if protocol == PROTOCOL_BLE:
         return BleTransport(hass, device)
+    if protocol == PROTOCOL_MATTER:
+        return MatterTransport(hass, device)
+    if protocol == PROTOCOL_MQTT:
+        return MqttTransport(hass, device)
     raise TransportError(f"unsupported protocol {protocol}")
 
 
@@ -34,9 +47,9 @@ async def async_validate_device(hass: HomeAssistant, device: dict[str, Any]) -> 
         return "invalid_device"
 
     try:
-        if device.get("protocol") == PROTOCOL_BLE:
-            # BLE peripherals are often asleep while configuring; accept the
-            # definition and let the runtime connection report reachability.
+        if device.get("protocol") in (PROTOCOL_BLE, PROTOCOL_MATTER):
+            # BLE peripherals and Matter bulbs can be asleep; the definition is
+            # valid once the target exists, runtime probes report reachability.
             return None
         if device.get("protocol") == PROTOCOL_NETWORK and device.get("net_protocol") != NET_HTTP:
             return None

@@ -29,6 +29,10 @@ from .const import (
     CONF_DEVICES,
     CONF_DEVICE_ID,
     CONF_ENABLED,
+    CONF_ENTITY_ID,
+    CONF_QOS,
+    CONF_RETAIN,
+    CONF_TOPIC,
     CONF_HEADERS,
     CONF_HOST,
     CONF_LINK,
@@ -48,6 +52,9 @@ from .const import (
     DEFAULT_BLE_CHAR_UUID,
     DEFAULT_BLE_SERVICE_UUID,
     DEFAULT_COLOR_TEMPLATE,
+    DEFAULT_MQTT_BODY,
+    DEFAULT_MQTT_QOS,
+    DEFAULT_MQTT_RETAIN,
     DEFAULT_NET_BODY,
     DEFAULT_NET_PATH,
     DEFAULT_PIXELS,
@@ -59,6 +66,8 @@ from .const import (
     DOMAIN,
     NET_PROTOCOLS,
     PROTOCOL_BLE,
+    PROTOCOL_MATTER,
+    PROTOCOL_MQTT,
     PROTOCOL_NETWORK,
     PROTOCOL_WLED,
 )
@@ -138,6 +147,37 @@ def _ble_schema(defaults: dict[str, Any] | None = None) -> Any:
     )
 
 
+def _matter_schema(defaults: dict[str, Any] | None = None) -> Any:
+    defaults = defaults or {}
+    return Schema(
+        {
+            Required(CONF_NAME, default=defaults.get(CONF_NAME, "Matter 灯")): str,
+            Required(CONF_ENTITY_ID, default=defaults.get(CONF_ENTITY_ID, "")): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light")
+            ),
+            Optional(CONF_ENABLED, default=defaults.get(CONF_ENABLED, True)): selector.BooleanSelector(),
+        }
+    )
+
+
+def _mqtt_schema(defaults: dict[str, Any] | None = None) -> Any:
+    defaults = defaults or {}
+    return Schema(
+        {
+            Required(CONF_NAME, default=defaults.get(CONF_NAME, "MQTT 灯")): str,
+            Required(CONF_TOPIC, default=defaults.get(CONF_TOPIC, "rgb_sync/light/state")): str,
+            Optional(CONF_QOS, default=defaults.get(CONF_QOS, DEFAULT_MQTT_QOS)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=2, mode=selector.NumberSelectorMode.BOX)
+            ),
+            Optional(CONF_RETAIN, default=defaults.get(CONF_RETAIN, DEFAULT_MQTT_RETAIN)): selector.BooleanSelector(),
+            Optional(CONF_BODY, default=defaults.get(CONF_BODY, DEFAULT_MQTT_BODY)): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
+            ),
+            Optional(CONF_ENABLED, default=defaults.get(CONF_ENABLED, True)): selector.BooleanSelector(),
+        }
+    )
+
+
 def _new_device(protocol: str, user_input: dict[str, Any]) -> dict[str, Any]:
     """Normalise a submitted form into a stored device definition."""
     device: dict[str, Any] = {
@@ -147,7 +187,24 @@ def _new_device(protocol: str, user_input: dict[str, Any]) -> dict[str, Any]:
         CONF_ENABLED: bool(user_input.get(CONF_ENABLED, True)),
         CONF_PIXELS: int(user_input.get(CONF_PIXELS, 1)),
     }
-    if protocol == PROTOCOL_WLED:
+    if protocol == PROTOCOL_MATTER:
+        device.update(
+            {
+                CONF_ENTITY_ID: str(user_input[CONF_ENTITY_ID]).strip().lower(),
+                CONF_PIXELS: 1,
+            }
+        )
+    elif protocol == PROTOCOL_MQTT:
+        device.update(
+            {
+                CONF_TOPIC: str(user_input[CONF_TOPIC]).strip(),
+                CONF_QOS: int(user_input.get(CONF_QOS, DEFAULT_MQTT_QOS)),
+                CONF_RETAIN: bool(user_input.get(CONF_RETAIN, DEFAULT_MQTT_RETAIN)),
+                CONF_BODY: str(user_input.get(CONF_BODY, DEFAULT_MQTT_BODY)),
+                CONF_PIXELS: 1,
+            }
+        )
+    elif protocol == PROTOCOL_WLED:
         device.update(
             {
                 CONF_HOST: str(user_input[CONF_HOST]).strip(),
@@ -207,7 +264,7 @@ class RgbSyncConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.ConfigFlowResult:
         return self.async_show_menu(
             step_id="add_menu",
-            menu_options=["wled", "network", "ble", "finish"],
+            menu_options=["wled", "network", "ble", "matter", "mqtt", "finish"],
         )
 
     async def async_step_wled(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
@@ -220,6 +277,12 @@ class RgbSyncConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_ble(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         return await self._async_device_step(PROTOCOL_BLE, user_input, _ble_schema())
+
+    async def async_step_matter(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        return await self._async_device_step(PROTOCOL_MATTER, user_input, _matter_schema())
+
+    async def async_step_mqtt(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        return await self._async_device_step(PROTOCOL_MQTT, user_input, _mqtt_schema())
 
     async def _async_device_step(
         self, protocol: str, user_input: dict[str, Any] | None, schema: Any
@@ -288,7 +351,17 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
             self._initialized = True
         return self.async_show_menu(
             step_id="init",
-            menu_options=["add_wled", "add_network", "add_ble", "edit", "remove", "settings", "save"],
+            menu_options=[
+                "add_wled",
+                "add_network",
+                "add_ble",
+                "add_matter",
+                "add_mqtt",
+                "edit",
+                "remove",
+                "settings",
+                "save",
+            ],
         )
 
     async def async_step_add_wled(
@@ -304,7 +377,17 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
     async def async_step_add_ble(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        return await self._async_add(PROTOCOL_BLE, user_input, _ble_schema())
+        return await self._async_add(PROTOCOL_BLE, user_input, _ble_schema(), step="add_ble")
+
+    async def async_step_add_matter(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        return await self._async_add(PROTOCOL_MATTER, user_input, _matter_schema(), step="add_matter")
+
+    async def async_step_add_mqtt(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        return await self._async_add(PROTOCOL_MQTT, user_input, _mqtt_schema(), step="add_mqtt")
 
     async def _async_add(
         self, protocol: str, user_input: dict[str, Any] | None, schema: Any, step: str | None = None
@@ -349,8 +432,17 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             device[CONF_NAME] = str(user_input[CONF_NAME]).strip() or device.get(CONF_NAME, "RGB")
             device[CONF_ENABLED] = bool(user_input[CONF_ENABLED])
-            if device.get(CONF_PROTOCOL) == PROTOCOL_BLE:
+            protocol = device.get(CONF_PROTOCOL)
+            if protocol == PROTOCOL_BLE:
                 device[CONF_ADDRESS] = str(user_input.get(CONF_ADDRESS, device.get(CONF_ADDRESS))).upper()
+            elif protocol == PROTOCOL_MATTER:
+                device[CONF_ENTITY_ID] = str(
+                    user_input.get(CONF_ENTITY_ID, device.get(CONF_ENTITY_ID, ""))
+                ).strip().lower()
+            elif protocol == PROTOCOL_MQTT:
+                device[CONF_TOPIC] = str(user_input.get(CONF_TOPIC, device.get(CONF_TOPIC, ""))).strip()
+                device[CONF_QOS] = int(user_input.get(CONF_QOS, device.get(CONF_QOS, DEFAULT_MQTT_QOS)))
+                device[CONF_RETAIN] = bool(user_input.get(CONF_RETAIN, device.get(CONF_RETAIN, False)))
             else:
                 device[CONF_HOST] = str(user_input.get(CONF_HOST, device.get(CONF_HOST, ""))).strip()
                 device[CONF_PORT] = int(user_input.get(CONF_PORT, device.get(CONF_PORT, 80)))
@@ -423,8 +515,19 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
             Required(CONF_NAME, default=device.get(CONF_NAME, "RGB")): str,
             Optional(CONF_ENABLED, default=device.get(CONF_ENABLED, True)): selector.BooleanSelector(),
         }
-        if device.get(CONF_PROTOCOL) == PROTOCOL_BLE:
+        protocol = device.get(CONF_PROTOCOL)
+        if protocol == PROTOCOL_BLE:
             fields[Optional(CONF_ADDRESS, default=device.get(CONF_ADDRESS, ""))] = str
+        elif protocol == PROTOCOL_MATTER:
+            fields[Optional(CONF_ENTITY_ID, default=device.get(CONF_ENTITY_ID, ""))] = selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light")
+            )
+        elif protocol == PROTOCOL_MQTT:
+            fields[Optional(CONF_TOPIC, default=device.get(CONF_TOPIC, ""))] = str
+            fields[Optional(CONF_QOS, default=device.get(CONF_QOS, DEFAULT_MQTT_QOS))] = selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=2, mode=selector.NumberSelectorMode.BOX)
+            )
+            fields[Optional(CONF_RETAIN, default=device.get(CONF_RETAIN, False))] = selector.BooleanSelector()
         else:
             fields[Optional(CONF_HOST, default=device.get(CONF_HOST, ""))] = str
             fields[Optional(CONF_PORT, default=device.get(CONF_PORT, 80))] = _port_selector()

@@ -16,6 +16,8 @@
           "wled": "WLED (WiFi)",
           "network": "Network controller (HTTP / TCP / UDP)",
           "ble": "Bluetooth LE controller",
+          "matter": "Matter light (existing entity)",
+          "mqtt": "MQTT topic",
           "finish": "Finish setup"
         }
       },
@@ -59,6 +61,27 @@
           "power_off_hex": "Power-off command (hex)",
           "enabled": "Include in whole-house sync"
         }
+      },
+      "matter": {
+        "title": "Add a Matter light",
+        "description": "Pick a light entity that belongs to a Matter bulb. Colour and brightness changes are forwarded to that entity.",
+        "data": {
+          "name": "Name",
+          "entity_id": "Light entity",
+          "enabled": "Include in whole-house sync"
+        }
+      },
+      "mqtt": {
+        "title": "Add an MQTT light",
+        "description": "Publish state to an MQTT topic. Templates support {state}, {on}, {brightness}, {brightness_pct}, {r}, {g}, {b}, {hex}, {effect} and {speed}.",
+        "data": {
+          "name": "Name",
+          "topic": "Topic",
+          "qos": "QoS",
+          "retain": "Retain message",
+          "body": "Payload template",
+          "enabled": "Include in whole-house sync"
+        }
       }
     },
     "error": {
@@ -79,6 +102,8 @@
           "add_wled": "Add WLED controller",
           "add_network": "Add network controller",
           "add_ble": "Add Bluetooth LE controller",
+          "add_matter": "Add Matter light",
+          "add_mqtt": "Add MQTT light",
           "edit": "Edit a device",
           "remove": "Remove a device",
           "settings": "Hub settings",
@@ -137,7 +162,11 @@
           "address": "Bluetooth address",
           "host": "Host / IP address",
           "port": "Port",
-          "pixels": "Pixel count"
+          "pixels": "Pixel count",
+          "entity_id": "Light entity",
+          "topic": "Topic",
+          "qos": "QoS",
+          "retain": "Retain message"
         }
       },
       "remove": {
@@ -163,6 +192,25 @@
       "save": {
         "title": "Save",
         "description": "Store the device list and hub settings."
+      },
+      "add_matter": {
+        "title": "Add a Matter light",
+        "data": {
+          "name": "Name",
+          "entity_id": "Light entity",
+          "enabled": "Include in whole-house sync"
+        }
+      },
+      "add_mqtt": {
+        "title": "Add an MQTT light",
+        "data": {
+          "name": "Name",
+          "topic": "Topic",
+          "qos": "QoS",
+          "retain": "Retain message",
+          "body": "Payload template",
+          "enabled": "Include in whole-house sync"
+        }
       }
     },
     "error": {

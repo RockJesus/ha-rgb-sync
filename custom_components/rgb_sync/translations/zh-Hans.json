@@ -16,7 +16,9 @@
           "wled": "WLED（WiFi）",
           "network": "网络灯控（HTTP / TCP / UDP）",
           "ble": "蓝牙 LE 灯控",
-          "finish": "完成配置"
+          "matter": "Matter 灯（现有实体）",
+          "mqtt": "MQTT 主题",
+          "finish": "完成设置"
         }
       },
       "wled": {
@@ -59,6 +61,27 @@
           "power_off_hex": "关灯指令（十六进制）",
           "enabled": "参与全屋同步"
         }
+      },
+      "matter": {
+        "title": "添加 Matter 灯",
+        "description": "选择已有 Matter 灯泡对应的灯实体，调色与亮度会转发给该实体。",
+        "data": {
+          "name": "名称",
+          "entity_id": "灯实体",
+          "enabled": "纳入全屋同步"
+        }
+      },
+      "mqtt": {
+        "title": "添加 MQTT 灯",
+        "description": "把状态发布到 MQTT 主题。模板支持 {state}、{on}、{brightness}、{brightness_pct}、{r}、{g}、{b}、{hex}、{effect}、{speed}。",
+        "data": {
+          "name": "名称",
+          "topic": "主题",
+          "qos": "QoS",
+          "retain": "保留消息",
+          "body": "报文模板",
+          "enabled": "纳入全屋同步"
+        }
       }
     },
     "error": {
@@ -79,6 +102,8 @@
           "add_wled": "添加 WLED 控制器",
           "add_network": "添加网络灯控",
           "add_ble": "添加蓝牙 LE 灯控",
+          "add_matter": "Matter 灯（现有实体）",
+          "add_mqtt": "MQTT 灯",
           "edit": "编辑设备",
           "remove": "删除设备",
           "settings": "中枢设置",
@@ -137,7 +162,11 @@
           "address": "蓝牙地址",
           "host": "主机 / IP 地址",
           "port": "端口",
-          "pixels": "灯珠数量"
+          "pixels": "灯珠数量",
+          "entity_id": "灯实体",
+          "topic": "主题",
+          "qos": "QoS",
+          "retain": "保留消息"
         }
       },
       "remove": {
@@ -163,6 +192,25 @@
       "save": {
         "title": "保存",
         "description": "写入设备列表与中枢设置。"
+      },
+      "add_matter": {
+        "title": "Add a Matter light",
+        "data": {
+          "name": "名称",
+          "entity_id": "灯实体",
+          "enabled": "纳入全屋同步"
+        }
+      },
+      "add_mqtt": {
+        "title": "Add an MQTT light",
+        "data": {
+          "name": "名称",
+          "topic": "主题",
+          "qos": "QoS",
+          "retain": "保留消息",
+          "body": "报文模板",
+          "enabled": "纳入全屋同步"
+        }
       }
     },
     "error": {

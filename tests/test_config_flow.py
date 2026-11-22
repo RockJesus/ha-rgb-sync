@@ -144,3 +144,43 @@ async def test_options_flow_add_and_remove(hass):
     assert len(stored) == 2
     assert stored[1][CONF_PROTOCOL] == PROTOCOL_NETWORK
     assert stored[1]["host"] == "192.168.1.60"
+
+
+async def test_matter_and_mqtt_devices(hass):
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "Home RGB"})
+    assert set(result["menu_options"]) >= {"matter", "mqtt"}
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "matter"})
+    assert result["step_id"] == "matter"
+    with patch(VALIDATE, return_value=None):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"name": "Matter 吊灯", "entity_id": "Light.Matter_Pendant", "enabled": True},
+        )
+    assert result["step_id"] == "add_menu"
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "mqtt"})
+    assert result["step_id"] == "mqtt"
+    with patch(VALIDATE, return_value=None):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "name": "MQTT 灯带",
+                "topic": "rgb_sync/strip",
+                "qos": 1,
+                "retain": True,
+                "body": '{"state": "{state}"}',
+                "enabled": True,
+            },
+        )
+    assert result["step_id"] == "add_menu"
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "finish"})
+    devices = result["data"][CONF_DEVICES]
+    assert [d[CONF_PROTOCOL] for d in devices] == ["matter", "mqtt"]
+    assert devices[0]["entity_id"] == "light.matter_pendant"
+    assert devices[0]["pixels"] == 1
+    assert devices[1]["topic"] == "rgb_sync/strip"
+    assert devices[1]["qos"] == 1
+    assert devices[1]["retain"] is True

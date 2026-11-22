@@ -4,9 +4,9 @@
 ![HA Version](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-03A9F4)
 
 > English summary: a Home Assistant hub that keeps every RGB controller in the house in sync over
-> WLED (WiFi), generic HTTP/TCP/UDP controllers and Bluetooth LE. One group light, per-device
-> lights, a whole-house link switch, eleven software effects, scene presets, audio-reactive mode
-> and an audible confirmation beep.
+> WLED (WiFi), generic HTTP/TCP/UDP controllers, Bluetooth LE, Matter lights and MQTT topics.
+> One group light, per-device lights, a whole-house link switch, eleven software effects, scene
+> presets, audio-reactive mode and an audible confirmation beep.
 
 一个「中枢」把家里所有 RGB 灯控拉到同一状态：**单独控制每一盏，也能一键全屋同步**。
 灯效由集成自己渲染，所以 WLED 灯带、杂牌网络灯控、蓝牙灯带看到的是同一套颜色和同一套动画。
@@ -18,8 +18,20 @@
 | **WLED（WiFi）** | WLED 0.13+ 固件 | HTTP `POST /json/state` 保存静态状态；UDP `21324` DRGB 实时帧 | 全帧动画，最高约 25 fps |
 | **网络灯控** | 任意 HTTP / TCP / UDP 灯控（ESP8266、MagicHome、自研板子等） | 可配置 URL、方法、报文模板；TCP 长连接；UDP 数据报 | 报文模板渲染，HTTP 约 5-8 fps |
 | **蓝牙 LE** | Triones / ELK-BLEDOM 兼容灯带，或自定义指令集 | HA `bluetooth` 的 BLE 连接，写入特征值 | 颜色帧，约 4 fps |
+| **Matter** | 已通过 Matter 集成接入 HA 的灯泡 / 灯带 | 转发现有 `light` 实体：`light.turn_on/off` 下发颜色与亮度 | 颜色帧，约 4 fps |
+| **MQTT** | 任意订阅同一主题的灯控 / 桥接程序（ESPHome、自研网关、Node-RED） | 向可配置主题发布报文，支持 QoS 0-2 与 retain | 颜色帧，约 7 fps |
 
 > WLED 的灯珠数量会在配置时自动读取（`/json/info`），无需手工填写。
+
+**Matter 说明**：Matter 的协议栈在 Home Assistant 内部，灯是以 `light` 实体出现的，所以这种接入方式是「选一个已有灯实体，让全屋同步引擎驱动它」。它不会重新配对设备，也不会绕过 Matter 控制器；在同步里得到的颜色/亮度会转发给该实体，动效以约 4 fps 推颜色帧。
+
+**MQTT 说明**：默认报文为 `{"state": "{state}", "brightness": {brightness}, "color": {"r": {r}, "g": {g}, "b": {b}}}`，主题不能带 `+` / `#` 通配符。模板可用 `{state}`、`{on}`、`{brightness}`、`{brightness_pct}`、`{r}`、`{g}`、`{b}`、`{hex}`、`{effect}`、`{speed}`，按需改成 Zigbee2MQTT、Tasmota 或自研网关认识的格式。
+
+```yaml
+# Tasmota / Zigbee2MQTT 风格示例
+topic: rgb_sync/desk
+body: '{"state": "{state}", "brightness": {brightness_pct}, "color": {"r": {r}, "g": {g}, "b": {b}}}'
+```
 
 ## 功能
 
@@ -41,7 +53,7 @@
 
 重启后：**设置 → 设备与服务 → 添加集成 → 搜索「RGB Sync / 全屋 RGB 同步」**。
 
-首次配置会依次让你添加灯具：WLED（填 IP）→ 网络灯控（选 HTTP/TCP/UDP 并填报文）→ 蓝牙（填 MAC）→ 完成。后续增删设备走集成卡片上的「配置」。
+首次配置会让你挑接入方式添加灯具：WLED（填 IP）、网络灯控（选 HTTP/TCP/UDP 并填报文）、蓝牙（填 MAC）、Matter（选已有灯实体）、MQTT（填主题与报文），可混合添加后完成。后续增删设备走集成卡片上的「配置」。
 
 ## 实体一览
 
