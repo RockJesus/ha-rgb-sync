@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .const import BEEP_PATH, CONF_DEVICE_ID, CONF_DEVICES, DOMAIN, PLATFORMS
+from .discovery import async_register_bluetooth_listener
 from .engine import SyncEngine
 from .services import async_register_services
 from .websocket_api import async_register_websocket
@@ -34,6 +35,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async_register_websocket(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    unsub_discovery = async_register_bluetooth_listener(hass, entry)
+    if unsub_discovery is not None:
+        entry.async_on_unload(unsub_discovery)
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
     return True
 

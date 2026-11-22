@@ -82,6 +82,10 @@
           "body": "报文模板",
           "enabled": "纳入全屋同步"
         }
+      },
+      "discovered": {
+        "title": "发现新设备",
+        "description": "全屋 RGB 在网络上发现了 {name}（{protocol}），要加入全屋中枢吗？"
       }
     },
     "error": {
@@ -90,7 +94,9 @@
       "unknown": "未知错误。"
     },
     "abort": {
-      "already_configured": "全屋 RGB 中枢已经配置过了。"
+      "already_configured": "全屋 RGB 中枢已经配置过了。",
+      "device_added": "已把发现的设备加入全屋中枢。",
+      "invalid_discovery_info": "发现结果不完整，已忽略。"
     }
   },
   "options": {
@@ -107,7 +113,8 @@
           "edit": "编辑设备",
           "remove": "删除设备",
           "settings": "中枢设置",
-          "save": "保存并完成"
+          "save": "保存并完成",
+          "discover": "自动发现设备"
         }
       },
       "add_wled": {
@@ -186,7 +193,8 @@
           "cue_player": "播放提示音的媒体播放器",
           "sensitivity": "声音灵敏度",
           "smoothing": "声音平滑度",
-          "speed": "默认灯效速度"
+          "speed": "默认灯效速度",
+          "auto_add": "自动加入新出现的蓝牙灯"
         }
       },
       "save": {
@@ -210,6 +218,21 @@
           "retain": "保留消息",
           "body": "报文模板",
           "enabled": "纳入全屋同步"
+        }
+      },
+      "discover": {
+        "title": "自动发现",
+        "description": "在蓝牙、Matter 与 mDNS 上发现 {count} 台新设备，勾选要加入的。",
+        "data": {
+          "candidates": "设备"
+        }
+      },
+      "discover_none": {
+        "title": "没有发现新设备",
+        "description": "没有找到未配置的蓝牙灯、Matter 灯或 WLED 设备。请确认设备已上电并在同一网络。",
+        "menu_options": {
+          "discover": "重新扫描",
+          "init": "返回"
         }
       }
     },

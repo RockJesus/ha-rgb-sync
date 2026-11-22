@@ -17,6 +17,8 @@ except ImportError:  # pragma: no cover - older Home Assistant
 
 from .const import (
     BLE_PROFILES,
+    CONF_AUTO_ADD,
+    CONF_CANDIDATES,
     CONF_ADDRESS,
     CONF_AUDIO_ENTITY,
     CONF_AUDIO_REACTIVE,
@@ -71,6 +73,7 @@ from .const import (
     PROTOCOL_NETWORK,
     PROTOCOL_WLED,
 )
+from .discovery import async_add_to_entry, async_scan_devices, build_device
 from .transports import async_validate_device
 
 _LOGGER = logging.getLogger(__name__)
@@ -247,6 +250,7 @@ class RgbSyncConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._name = DEFAULT_TITLE
         self._devices: list[dict[str, Any]] = []
+        self._discovered: dict[str, Any] | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         await self.async_set_unique_id(DOMAIN)
@@ -283,6 +287,75 @@ class RgbSyncConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_mqtt(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
         return await self._async_device_step(PROTOCOL_MQTT, user_input, _mqtt_schema())
+
+    # -- discovery (bluetooth / mDNS) ----------------------------------
+    async def async_step_bluetooth(
+        self, discovery_info: Any | None = None
+    ) -> config_entries.ConfigFlowResult:
+        address = str(getattr(discovery_info, "address", "") or "").strip().upper()
+        if not address:
+            return self.async_abort(reason="invalid_discovery_info")
+        name = str(getattr(discovery_info, "name", "") or "").strip() or f"蓝牙灯带 {address[-5:]}"
+        self._discovered = {
+            CONF_PROTOCOL: PROTOCOL_BLE,
+            CONF_NAME: name,
+            CONF_ADDRESS: address,
+        }
+        return await self._async_discovered_step()
+
+    async def async_step_zeroconf(
+        self, discovery_info: Any | None = None
+    ) -> config_entries.ConfigFlowResult:
+        host = str(getattr(discovery_info, "host", "") or "").strip()
+        if not host:
+            return self.async_abort(reason="invalid_discovery_info")
+        service_name = str(getattr(discovery_info, "name", "") or "").strip()
+        label = service_name.split(".")[0] or host
+        self._discovered = {
+            CONF_PROTOCOL: PROTOCOL_WLED,
+            CONF_NAME: label,
+            CONF_HOST: host,
+            CONF_PORT: int(getattr(discovery_info, "port", 80) or 80),
+        }
+        return await self._async_discovered_step()
+
+    async def async_step_discovered(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Second half of a discovery flow: confirm and append."""
+        return await self._async_discovered_step(user_input)
+
+    async def _async_discovered_step(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Confirm a discovered device, appending it to the existing hub."""
+        candidate = self._discovered
+        if candidate is None:
+            return await self.async_step_user()
+        protocol = str(candidate[CONF_PROTOCOL])
+        schema = _ble_schema(candidate) if protocol == PROTOCOL_BLE else _wled_schema(candidate)
+        existing = self.hass.config_entries.async_entries(DOMAIN)
+        if not existing:
+            # First discovery on a fresh install: continue the normal wizard.
+            await self.async_set_unique_id(DOMAIN)
+            self._abort_if_unique_id_configured()
+            self._name = DEFAULT_TITLE
+            self._devices.append(build_device(candidate))
+            return await self.async_step_add_menu()
+        if user_input is not None:
+            device = _new_device(protocol, user_input)
+            error = await async_validate_device(self.hass, device)
+            if error:
+                return self.async_show_form(
+                    step_id="discovered", data_schema=schema, errors={"base": error}
+                )
+            await async_add_to_entry(self.hass, existing[0], [device])
+            return self.async_abort(reason="device_added")
+        return self.async_show_form(
+            step_id="discovered",
+            data_schema=schema,
+            description_placeholders={"name": str(candidate.get(CONF_NAME)), "protocol": protocol},
+        )
 
     async def _async_device_step(
         self, protocol: str, user_input: dict[str, Any] | None, schema: Any
@@ -330,6 +403,7 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
         self._devices: list[dict[str, Any]] = []
         self._options: dict[str, Any] = {}
         self._edit_id: str | None = None
+        self._candidates: list[dict[str, Any]] = []
         self._initialized = False
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
@@ -347,6 +421,7 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
                 CONF_SENSITIVITY: int(data.get(CONF_SENSITIVITY, DEFAULT_SENSITIVITY)),
                 CONF_SMOOTHING: int(data.get(CONF_SMOOTHING, DEFAULT_SMOOTHING)),
                 CONF_SPEED: int(data.get(CONF_SPEED, DEFAULT_SPEED)),
+                CONF_AUTO_ADD: bool(data.get(CONF_AUTO_ADD, True)),
             }
             self._initialized = True
         return self.async_show_menu(
@@ -357,6 +432,7 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
                 "add_ble",
                 "add_matter",
                 "add_mqtt",
+                "discover",
                 "edit",
                 "remove",
                 "settings",
@@ -401,6 +477,79 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
             self._devices.append(device)
             return await self.async_step_init()
         return self.async_show_form(step_id=step, data_schema=schema)
+
+    async def async_step_discover(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Scan BLE / Matter / mDNS and let the user add what was found."""
+        if user_input is not None and self._candidates:
+            raw = user_input.get(CONF_CANDIDATES) or []
+            if isinstance(raw, str):
+                raw = [raw]
+            added = 0
+            failed = False
+            for value in raw:
+                try:
+                    candidate = self._candidates[int(value)]
+                except (ValueError, IndexError):
+                    continue
+                device = build_device(candidate)
+                error = await async_validate_device(self.hass, device)
+                if error:
+                    failed = True
+                    continue
+                self._devices.append(device)
+                added += 1
+            if added:
+                return await self.async_step_init()
+            if failed:
+                return self.async_show_form(
+                    step_id="discover",
+                    data_schema=self._candidate_schema(),
+                    errors={"base": "cannot_connect"},
+                )
+            return await self.async_step_init()
+        self._candidates = await async_scan_devices(self.hass, self._devices)
+        if not self._candidates:
+            return self.async_show_menu(step_id="discover_none", menu_options=["discover", "init"])
+        return self.async_show_form(
+            step_id="discover",
+            data_schema=self._candidate_schema(),
+            description_placeholders={"count": str(len(self._candidates))},
+        )
+
+    async def async_step_discover_none(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Nothing was found: offer a re-scan or a way back."""
+        return self.async_show_menu(step_id="discover_none", menu_options=["discover", "init"])
+
+    def _candidate_schema(self) -> Any:
+        options = [
+            selector.SelectOptionDict(
+                value=str(index),
+                label=f"{candidate.get(CONF_NAME)} · {candidate.get(CONF_PROTOCOL)}"
+                + (
+                    f" · {candidate.get(CONF_ADDRESS) or candidate.get(CONF_HOST) or candidate.get(CONF_ENTITY_ID)}"
+                    if candidate.get(CONF_ADDRESS)
+                    or candidate.get(CONF_HOST)
+                    or candidate.get(CONF_ENTITY_ID)
+                    else ""
+                ),
+            )
+            for index, candidate in enumerate(self._candidates)
+        ]
+        return Schema(
+            {
+                Optional(CONF_CANDIDATES, default=[]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=options,
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                )
+            }
+        )
 
     async def async_step_edit(
         self, user_input: dict[str, Any] | None = None
@@ -479,6 +628,7 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
                     CONF_SENSITIVITY: int(user_input.get(CONF_SENSITIVITY, DEFAULT_SENSITIVITY)),
                     CONF_SMOOTHING: int(user_input.get(CONF_SMOOTHING, DEFAULT_SMOOTHING)),
                     CONF_SPEED: int(user_input.get(CONF_SPEED, DEFAULT_SPEED)),
+                    CONF_AUTO_ADD: bool(user_input.get(CONF_AUTO_ADD, True)),
                 }
             )
             return await self.async_step_init()
@@ -563,6 +713,9 @@ class RgbSyncOptionsFlow(config_entries.OptionsFlow):
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(min=1, max=100, mode=selector.NumberSelectorMode.SLIDER)
                 ),
+                Optional(
+                    CONF_AUTO_ADD, default=self._options.get(CONF_AUTO_ADD, True)
+                ): selector.BooleanSelector(),
             }
         )
 

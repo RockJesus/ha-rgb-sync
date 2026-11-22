@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "rgb_sync"
 NAME: Final = "RGB Sync"
-VERSION: Final = "1.0.0"
+VERSION: Final = "1.0.4"
 
 PLATFORMS: Final = ["button", "light", "number", "select", "sensor", "switch"]
 
@@ -24,6 +24,8 @@ CONF_SENSITIVITY: Final = "sensitivity"
 CONF_SMOOTHING: Final = "smoothing"
 CONF_SPEED: Final = "speed"
 CONF_SCENE: Final = "scene"
+CONF_AUTO_ADD: Final = "auto_add"
+CONF_CANDIDATES: Final = "candidates"
 
 CONF_DEVICE_ID: Final = "id"
 CONF_PROTOCOL: Final = "protocol"

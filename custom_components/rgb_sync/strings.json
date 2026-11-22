@@ -82,6 +82,10 @@
           "body": "Payload template",
           "enabled": "Include in whole-house sync"
         }
+      },
+      "discovered": {
+        "title": "Device discovered",
+        "description": "RGB Sync found {name} ({protocol}) on your network. Add it to the whole-house hub?"
       }
     },
     "error": {
@@ -90,7 +94,9 @@
       "unknown": "Unexpected error."
     },
     "abort": {
-      "already_configured": "The RGB Sync hub is already configured."
+      "already_configured": "The RGB Sync hub is already configured.",
+      "device_added": "The discovered device was added to the hub.",
+      "invalid_discovery_info": "The discovery result was incomplete."
     }
   },
   "options": {
@@ -107,7 +113,8 @@
           "edit": "Edit a device",
           "remove": "Remove a device",
           "settings": "Hub settings",
-          "save": "Save and finish"
+          "save": "Save and finish",
+          "discover": "Discover devices automatically"
         }
       },
       "add_wled": {
@@ -186,7 +193,8 @@
           "cue_player": "Media player for the beep",
           "sensitivity": "Audio sensitivity",
           "smoothing": "Audio smoothing",
-          "speed": "Default effect speed"
+          "speed": "Default effect speed",
+          "auto_add": "Add new Bluetooth controllers automatically"
         }
       },
       "save": {
@@ -210,6 +218,21 @@
           "retain": "Retain message",
           "body": "Payload template",
           "enabled": "Include in whole-house sync"
+        }
+      },
+      "discover": {
+        "title": "Automatic discovery",
+        "description": "Found {count} new device(s) on Bluetooth LE, Matter or mDNS. Select the ones to add.",
+        "data": {
+          "candidates": "Devices"
+        }
+      },
+      "discover_none": {
+        "title": "Nothing new found",
+        "description": "No unconfigured BLE controller, Matter light or WLED instance answered. Make sure the devices are powered on and on the same network.",
+        "menu_options": {
+          "discover": "Scan again",
+          "init": "Back"
         }
       }
     },
