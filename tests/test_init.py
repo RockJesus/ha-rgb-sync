@@ -105,3 +105,29 @@ async def test_group_light_and_sync_switch(hass, socket_enabled):
     assert hass.states.get("switch.home_rgb_whole_house_sync").state == "on"
 
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_setup_prunes_entities_of_removed_devices(hass, socket_enabled):
+    from homeassistant.helpers import entity_registry as er
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Home RGB",
+        data={CONF_DEVICES: []},
+        entry_id="prune_test",
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    stale = registry.async_get_or_create(
+        "light",
+        DOMAIN,
+        "prune_test_abcdef0123",
+        suggested_object_id="gone_strip",
+        config_entry=entry,
+    )
+    assert registry.async_get(stale.entity_id) is not None
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert registry.async_get_entity_id("light", DOMAIN, "prune_test_abcdef0123") is None
+    await hass.config_entries.async_unload(entry.entry_id)
