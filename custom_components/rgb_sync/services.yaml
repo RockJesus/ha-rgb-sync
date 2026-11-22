@@ -1,14 +1,11 @@
 apply:
   name: 应用灯光状态
   description: 对单盏灯或全部灯设置开关、亮度、颜色或灯效。
+  target:
+    device:
+      integration: rgb_sync
   fields:
-    device_id:
-      name: 设备
-      description: 留空表示控制全部设备。
-      selector:
-        device:
-          integration: rgb_sync
-    on:
+    "on":
       name: 开关
       selector:
         boolean:
@@ -58,12 +55,10 @@ apply:
 effect:
   name: 设置灯效
   description: 按指定配色与速度启动一个灯效。
+  target:
+    device:
+      integration: rgb_sync
   fields:
-    device_id:
-      name: 设备
-      selector:
-        device:
-          integration: rgb_sync
     effect:
       name: 灯效
       required: true
@@ -140,12 +135,9 @@ cue:
 identify:
   name: 定位设备
   description: 让设备闪白，便于找到它。
-  fields:
-    device_id:
-      name: 设备
-      selector:
-        device:
-          integration: rgb_sync
+  target:
+    device:
+      integration: rgb_sync
 
 ping:
   name: 刷新在线状态

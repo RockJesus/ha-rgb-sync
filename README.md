@@ -67,7 +67,7 @@
 
 | 服务 | 说明 |
 | --- | --- |
-| `rgb_sync.apply` | 设置开关 / 亮度 / RGB / 16 进制颜色 / 灯效 / 速度 / 配色；`device_id` 留空=全部 |
+| `rgb_sync.apply` | 设置开关 / 亮度 / RGB / 16 进制颜色 / 灯效 / 速度 / 配色；target 留空=全部 |
 | `rgb_sync.effect` | 直接启动灯效，可带配色与速度 |
 | `rgb_sync.scene` | 应用场景预设 |
 | `rgb_sync.audio_level` | 推入 0-1 音量电平（可选 48 段频谱） |
@@ -83,8 +83,9 @@ data:
 
 # 只让书房灯变青蓝并呼吸
 service: rgb_sync.apply
+target:
+  entity_id: light.shufang
 data:
-  device_id: 书房灯带
   rgb_color: [0, 229, 255]
   brightness: 180
   effect: 呼吸

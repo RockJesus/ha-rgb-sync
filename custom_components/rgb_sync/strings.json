@@ -231,10 +231,6 @@
       "name": "Apply light state",
       "description": "Set power, brightness, colour or effect on one device or on every device.",
       "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "Leave empty to control every device."
-        },
         "on": {
           "name": "Power",
           "description": "Turn the light on or off."
@@ -269,10 +265,6 @@
       "name": "Set effect",
       "description": "Start an effect with an optional palette and speed.",
       "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "Leave empty to control every device."
-        },
         "effect": {
           "name": "Effect"
         },
@@ -314,12 +306,7 @@
     "identify": {
       "name": "Identify device",
       "description": "Flash a device white so you can find it.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "Leave empty to flash every device."
-        }
-      }
+      "fields": {}
     },
     "ping": {
       "name": "Refresh availability",

@@ -7,7 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers import config_validation as cv, device_registry as dr, selector
+from homeassistant.helpers import config_validation as cv, device_registry as dr, entity_registry as er, selector
 
 from .const import (
     ATTR_BANDS,
@@ -79,23 +79,47 @@ def _engines(hass: HomeAssistant) -> list[SyncEngine]:
 
 
 def _resolve(engine: SyncEngine, hass: HomeAssistant, service_call: ServiceCall) -> list[str]:
-    """Map a Home Assistant device selector to RGB Sync device ids."""
-    ha_device_id = service_call.data.get(ATTR_DEVICE)
-    if not ha_device_id:
+    """Map Home Assistant device / entity targets to RGB Sync device ids."""
+    device_refs = service_call.data.get(ATTR_DEVICE)
+    if isinstance(device_refs, str):
+        device_refs = [device_refs]
+    entity_refs = service_call.data.get("entity_id")
+    if isinstance(entity_refs, str):
+        entity_refs = [entity_refs]
+
+    ha_ids: set[str] = set(device_refs or [])
+    if entity_refs:
+        registry = er.async_get(hass)
+        for entity_id in entity_refs:
+            record = registry.async_get(entity_id)
+            if record is not None and record.device_id:
+                ha_ids.add(record.device_id)
+
+    if not ha_ids:
+        # Plain YAML callers may pass the integration device id or its name.
+        raw = service_call.data.get(ATTR_DEVICE)
+        if raw:
+            for device in engine.devices:
+                if raw in (str(device.get("id")), str(device.get("name"))):
+                    return [str(device["id"])]
         return [str(device["id"]) for device in engine.devices]
-    registry = dr.async_get(hass)
-    entry = registry.async_get(ha_device_id)
-    if entry is None:
-        return []
-    for domain, identifier in entry.identifiers:
-        if domain != DOMAIN:
+
+    resolved: list[str] = []
+    device_registry = dr.async_get(hass)
+    for ha_id in ha_ids:
+        entry = device_registry.async_get(ha_id)
+        if entry is None:
             continue
-        if identifier == engine.entry.entry_id:
-            return [str(device["id"]) for device in engine.devices]
-        for device in engine.devices:
-            if f"{engine.entry.entry_id}_{device['id']}" == identifier:
-                return [str(device["id"])]
-    return []
+        for domain, identifier in entry.identifiers:
+            if domain != DOMAIN:
+                continue
+            if identifier == engine.entry.entry_id:
+                resolved.extend(str(device["id"]) for device in engine.devices)
+                continue
+            for device in engine.devices:
+                if f"{engine.entry.entry_id}_{device['id']}" == identifier:
+                    resolved.append(str(device["id"]))
+    return resolved
 
 
 async def _async_apply(hass: HomeAssistant, service_call: ServiceCall) -> None:

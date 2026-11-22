@@ -1,8 +1,11 @@
 {
   "domain": "rgb_sync",
   "name": "RGB Sync",
-  "after": [
+  "after_dependencies": [
     "bluetooth"
+  ],
+  "categories": [
+    "lighting"
   ],
   "codeowners": [
     "@RockJesus"
