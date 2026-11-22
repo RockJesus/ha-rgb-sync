@@ -1,0 +1,329 @@
+{
+  "title": "全屋 RGB 同步",
+  "config": {
+    "step": {
+      "user": {
+        "title": "全屋 RGB 同步",
+        "description": "一个中枢把家里所有 RGB 灯控拉到同一状态。下一步先添加第一盏灯。",
+        "data": {
+          "name": "中枢名称"
+        }
+      },
+      "add_menu": {
+        "title": "添加灯具",
+        "description": "选择这盏灯使用的协议，或结束配置。",
+        "menu_options": {
+          "wled": "WLED（WiFi）",
+          "network": "网络灯控（HTTP / TCP / UDP）",
+          "ble": "蓝牙 LE 灯控",
+          "finish": "完成配置"
+        }
+      },
+      "wled": {
+        "title": "添加 WLED 控制器",
+        "description": "填写 WLED 的局域网地址，灯珠数量会自动读取。",
+        "data": {
+          "name": "名称",
+          "host": "主机 / IP 地址",
+          "port": "HTTP 端口",
+          "pixels": "灯珠数量（备用）",
+          "enabled": "参与全屋同步"
+        }
+      },
+      "network": {
+        "title": "添加网络灯控",
+        "description": "通过可配置的 HTTP、TCP 或 UDP 端点向任意局域网设备发送状态。模板支持 {on}、{brightness}、{brightness_pct}、{r}、{g}、{b}、{hex}、{effect}、{speed}。",
+        "data": {
+          "name": "名称",
+          "net_protocol": "协议",
+          "host": "主机 / IP 地址",
+          "port": "端口",
+          "path": "路径（仅 HTTP）",
+          "method": "HTTP 方法",
+          "body": "报文模板",
+          "pixels": "灯珠数量",
+          "enabled": "参与全屋同步"
+        }
+      },
+      "ble": {
+        "title": "添加蓝牙 LE 灯控",
+        "description": "地址形如 AA:BB:CC:DD:EE:FF。Triones 协议覆盖大多数通用 BLE RGB 灯控；自定义指令请选 generic 并填写报文模板。",
+        "data": {
+          "name": "名称",
+          "address": "蓝牙地址",
+          "ble_profile": "指令协议",
+          "service_uuid": "服务 UUID",
+          "char_uuid": "特征 UUID",
+          "color_template": "颜色指令模板（十六进制）",
+          "power_on_hex": "开灯指令（十六进制）",
+          "power_off_hex": "关灯指令（十六进制）",
+          "enabled": "参与全屋同步"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "设备没有响应，请检查地址以及是否已开启局域网控制。",
+      "invalid_device": "设备信息不完整。",
+      "unknown": "未知错误。"
+    },
+    "abort": {
+      "already_configured": "全屋 RGB 中枢已经配置过了。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "设备与行为",
+        "description": "设备保存在中枢里，修改后记得最后保存。",
+        "menu_options": {
+          "add_wled": "添加 WLED 控制器",
+          "add_network": "添加网络灯控",
+          "add_ble": "添加蓝牙 LE 灯控",
+          "edit": "编辑设备",
+          "remove": "删除设备",
+          "settings": "中枢设置",
+          "save": "保存并完成"
+        }
+      },
+      "add_wled": {
+        "title": "添加 WLED 控制器",
+        "data": {
+          "name": "名称",
+          "host": "主机 / IP 地址",
+          "port": "HTTP 端口",
+          "pixels": "灯珠数量（备用）",
+          "enabled": "参与全屋同步"
+        }
+      },
+      "add_network": {
+        "title": "添加网络灯控",
+        "data": {
+          "name": "名称",
+          "net_protocol": "协议",
+          "host": "主机 / IP 地址",
+          "port": "端口",
+          "path": "路径（仅 HTTP）",
+          "method": "HTTP 方法",
+          "body": "报文模板",
+          "pixels": "灯珠数量",
+          "enabled": "参与全屋同步"
+        }
+      },
+      "add_ble": {
+        "title": "添加蓝牙 LE 灯控",
+        "data": {
+          "name": "名称",
+          "address": "蓝牙地址",
+          "ble_profile": "指令协议",
+          "service_uuid": "服务 UUID",
+          "char_uuid": "特征 UUID",
+          "color_template": "颜色指令模板（十六进制）",
+          "power_on_hex": "开灯指令（十六进制）",
+          "power_off_hex": "关灯指令（十六进制）",
+          "enabled": "参与全屋同步"
+        }
+      },
+      "edit": {
+        "title": "编辑设备",
+        "data": {
+          "device_id": "设备"
+        }
+      },
+      "edit_device": {
+        "title": "正在编辑 {name}",
+        "data": {
+          "name": "名称",
+          "enabled": "参与全屋同步",
+          "address": "蓝牙地址",
+          "host": "主机 / IP 地址",
+          "port": "端口",
+          "pixels": "灯珠数量"
+        }
+      },
+      "remove": {
+        "title": "删除设备",
+        "data": {
+          "device_id": "设备"
+        }
+      },
+      "settings": {
+        "title": "中枢设置",
+        "description": "这些是重启后的默认值。运行中可由开关和数值实体实时调整。",
+        "data": {
+          "link": "颜色与灯效跟随全屋同步",
+          "audio_reactive": "声音律动模式",
+          "audio_entity": "音量来源",
+          "cue": "操作提示音",
+          "cue_player": "播放提示音的媒体播放器",
+          "sensitivity": "声音灵敏度",
+          "smoothing": "声音平滑度",
+          "speed": "默认灯效速度"
+        }
+      },
+      "save": {
+        "title": "保存",
+        "description": "写入设备列表与中枢设置。"
+      }
+    },
+    "error": {
+      "cannot_connect": "设备没有响应，请检查地址以及是否已开启局域网控制。",
+      "invalid_device": "设备信息不完整。"
+    }
+  },
+  "entity": {
+    "light": {
+      "all_lights": {
+        "name": "全屋灯光"
+      }
+    },
+    "switch": {
+      "link": {
+        "name": "全屋同步"
+      },
+      "audio_reactive": {
+        "name": "声音律动"
+      },
+      "cue": {
+        "name": "操作提示音"
+      }
+    },
+    "number": {
+      "speed": {
+        "name": "灯效速度"
+      },
+      "sensitivity": {
+        "name": "声音灵敏度"
+      },
+      "smoothing": {
+        "name": "声音平滑度"
+      }
+    },
+    "select": {
+      "scene": {
+        "name": "场景预设"
+      }
+    },
+    "sensor": {
+      "online_devices": {
+        "name": "在线设备"
+      },
+      "audio_level": {
+        "name": "音量电平"
+      },
+      "frame_rate": {
+        "name": "帧率"
+      }
+    },
+    "button": {
+      "identify": {
+        "name": "定位闪烁"
+      },
+      "ping": {
+        "name": "刷新在线状态"
+      },
+      "test_cue": {
+        "name": "测试提示音"
+      }
+    }
+  },
+  "services": {
+    "apply": {
+      "name": "应用灯光状态",
+      "description": "对单盏灯或全部灯设置开关、亮度、颜色或灯效。",
+      "fields": {
+        "device_id": {
+          "name": "设备",
+          "description": "留空表示控制全部设备。"
+        },
+        "on": {
+          "name": "开关",
+          "description": "开灯或关灯。"
+        },
+        "brightness": {
+          "name": "亮度",
+          "description": "0-255。"
+        },
+        "rgb_color": {
+          "name": "RGB 颜色",
+          "description": "红、绿、蓝三通道。"
+        },
+        "hex_color": {
+          "name": "十六进制颜色",
+          "description": "RGB 的替代写法，例如 #ff004d。"
+        },
+        "effect": {
+          "name": "灯效",
+          "description": "灯效名称。"
+        },
+        "speed": {
+          "name": "灯效速度",
+          "description": "1-100。"
+        },
+        "palette": {
+          "name": "配色",
+          "description": "灯效使用的十六进制颜色列表。"
+        }
+      }
+    },
+    "effect": {
+      "name": "设置灯效",
+      "description": "按指定配色与速度启动一个灯效。",
+      "fields": {
+        "device_id": {
+          "name": "设备",
+          "description": "留空表示控制全部设备。"
+        },
+        "effect": {
+          "name": "灯效"
+        },
+        "speed": {
+          "name": "灯效速度"
+        },
+        "palette": {
+          "name": "配色"
+        }
+      }
+    },
+    "scene": {
+      "name": "应用场景",
+      "description": "把配色与灯效预设应用到全部设备。",
+      "fields": {
+        "scene": {
+          "name": "场景"
+        }
+      }
+    },
+    "audio_level": {
+      "name": "推送音量电平",
+      "description": "从麦克风、ESPHome 传感器或浏览器分析器送入 0-1 的电平。",
+      "fields": {
+        "level": {
+          "name": "电平",
+          "description": "0 到 1。"
+        },
+        "bands": {
+          "name": "频谱",
+          "description": "可选的 48 段频谱。"
+        }
+      }
+    },
+    "cue": {
+      "name": "播放提示音",
+      "description": "在已配置的媒体播放器上播放确认音。"
+    },
+    "identify": {
+      "name": "定位设备",
+      "description": "让设备闪白，便于找到它。",
+      "fields": {
+        "device_id": {
+          "name": "设备",
+          "description": "留空表示全部设备闪烁。"
+        }
+      }
+    },
+    "ping": {
+      "name": "刷新在线状态",
+      "description": "探测全部设备并刷新在线计数。"
+    }
+  }
+}

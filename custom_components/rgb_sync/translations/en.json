@@ -1,0 +1,329 @@
+{
+  "title": "RGB Sync",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Whole-house RGB",
+        "description": "One hub keeps every RGB controller in your home in sync. Add the first light on the next screen.",
+        "data": {
+          "name": "Hub name"
+        }
+      },
+      "add_menu": {
+        "title": "Add a light",
+        "description": "Pick the protocol used by this light, or finish the setup.",
+        "menu_options": {
+          "wled": "WLED (WiFi)",
+          "network": "Network controller (HTTP / TCP / UDP)",
+          "ble": "Bluetooth LE controller",
+          "finish": "Finish setup"
+        }
+      },
+      "wled": {
+        "title": "Add a WLED controller",
+        "description": "Enter the LAN address of the WLED instance. The pixel count is read automatically.",
+        "data": {
+          "name": "Name",
+          "host": "Host / IP address",
+          "port": "HTTP port",
+          "pixels": "Pixel count (fallback)",
+          "enabled": "Include in whole-house sync"
+        }
+      },
+      "network": {
+        "title": "Add a network controller",
+        "description": "Send state to any LAN device with a configurable HTTP, TCP or UDP endpoint. Templates support {on}, {brightness}, {brightness_pct}, {r}, {g}, {b}, {hex}, {effect} and {speed}.",
+        "data": {
+          "name": "Name",
+          "net_protocol": "Protocol",
+          "host": "Host / IP address",
+          "port": "Port",
+          "path": "Path (HTTP only)",
+          "method": "HTTP method",
+          "body": "Payload template",
+          "pixels": "Pixel count",
+          "enabled": "Include in whole-house sync"
+        }
+      },
+      "ble": {
+        "title": "Add a Bluetooth LE controller",
+        "description": "The address looks like AA:BB:CC:DD:EE:FF. The Triones profile covers most generic BLE RGB controllers; use the generic profile for a custom command set.",
+        "data": {
+          "name": "Name",
+          "address": "Bluetooth address",
+          "ble_profile": "Command profile",
+          "service_uuid": "Service UUID",
+          "char_uuid": "Characteristic UUID",
+          "color_template": "Colour command template (hex)",
+          "power_on_hex": "Power-on command (hex)",
+          "power_off_hex": "Power-off command (hex)",
+          "enabled": "Include in whole-house sync"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "The device did not answer. Check the address and that local control is enabled.",
+      "invalid_device": "The device definition is incomplete.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "The RGB Sync hub is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Devices and behaviour",
+        "description": "Devices are stored on the hub. Remember to save at the end.",
+        "menu_options": {
+          "add_wled": "Add WLED controller",
+          "add_network": "Add network controller",
+          "add_ble": "Add Bluetooth LE controller",
+          "edit": "Edit a device",
+          "remove": "Remove a device",
+          "settings": "Hub settings",
+          "save": "Save and finish"
+        }
+      },
+      "add_wled": {
+        "title": "Add a WLED controller",
+        "data": {
+          "name": "Name",
+          "host": "Host / IP address",
+          "port": "HTTP port",
+          "pixels": "Pixel count (fallback)",
+          "enabled": "Include in whole-house sync"
+        }
+      },
+      "add_network": {
+        "title": "Add a network controller",
+        "data": {
+          "name": "Name",
+          "net_protocol": "Protocol",
+          "host": "Host / IP address",
+          "port": "Port",
+          "path": "Path (HTTP only)",
+          "method": "HTTP method",
+          "body": "Payload template",
+          "pixels": "Pixel count",
+          "enabled": "Include in whole-house sync"
+        }
+      },
+      "add_ble": {
+        "title": "Add a Bluetooth LE controller",
+        "data": {
+          "name": "Name",
+          "address": "Bluetooth address",
+          "ble_profile": "Command profile",
+          "service_uuid": "Service UUID",
+          "char_uuid": "Characteristic UUID",
+          "color_template": "Colour command template (hex)",
+          "power_on_hex": "Power-on command (hex)",
+          "power_off_hex": "Power-off command (hex)",
+          "enabled": "Include in whole-house sync"
+        }
+      },
+      "edit": {
+        "title": "Edit a device",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "edit_device": {
+        "title": "Editing {name}",
+        "data": {
+          "name": "Name",
+          "enabled": "Include in whole-house sync",
+          "address": "Bluetooth address",
+          "host": "Host / IP address",
+          "port": "Port",
+          "pixels": "Pixel count"
+        }
+      },
+      "remove": {
+        "title": "Remove a device",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "settings": {
+        "title": "Hub settings",
+        "description": "These values are used as defaults after a restart. The switches and number entities change them at runtime.",
+        "data": {
+          "link": "Sync colour and effects across devices",
+          "audio_reactive": "Audio reactive mode",
+          "audio_entity": "Audio level source",
+          "cue": "Audible feedback",
+          "cue_player": "Media player for the beep",
+          "sensitivity": "Audio sensitivity",
+          "smoothing": "Audio smoothing",
+          "speed": "Default effect speed"
+        }
+      },
+      "save": {
+        "title": "Save",
+        "description": "Store the device list and hub settings."
+      }
+    },
+    "error": {
+      "cannot_connect": "The device did not answer. Check the address and that local control is enabled.",
+      "invalid_device": "The device definition is incomplete."
+    }
+  },
+  "entity": {
+    "light": {
+      "all_lights": {
+        "name": "All lights"
+      }
+    },
+    "switch": {
+      "link": {
+        "name": "Whole-house sync"
+      },
+      "audio_reactive": {
+        "name": "Audio reactive"
+      },
+      "cue": {
+        "name": "Audible feedback"
+      }
+    },
+    "number": {
+      "speed": {
+        "name": "Effect speed"
+      },
+      "sensitivity": {
+        "name": "Audio sensitivity"
+      },
+      "smoothing": {
+        "name": "Audio smoothing"
+      }
+    },
+    "select": {
+      "scene": {
+        "name": "Scene preset"
+      }
+    },
+    "sensor": {
+      "online_devices": {
+        "name": "Online devices"
+      },
+      "audio_level": {
+        "name": "Audio level"
+      },
+      "frame_rate": {
+        "name": "Frame rate"
+      }
+    },
+    "button": {
+      "identify": {
+        "name": "Identify"
+      },
+      "ping": {
+        "name": "Refresh availability"
+      },
+      "test_cue": {
+        "name": "Test beep"
+      }
+    }
+  },
+  "services": {
+    "apply": {
+      "name": "Apply light state",
+      "description": "Set power, brightness, colour or effect on one device or on every device.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "Leave empty to control every device."
+        },
+        "on": {
+          "name": "Power",
+          "description": "Turn the light on or off."
+        },
+        "brightness": {
+          "name": "Brightness",
+          "description": "0-255."
+        },
+        "rgb_color": {
+          "name": "RGB colour",
+          "description": "Red, green and blue values."
+        },
+        "hex_color": {
+          "name": "Hex colour",
+          "description": "Alternative to RGB, for example #ff004d."
+        },
+        "effect": {
+          "name": "Effect",
+          "description": "Effect name."
+        },
+        "speed": {
+          "name": "Effect speed",
+          "description": "1-100."
+        },
+        "palette": {
+          "name": "Palette",
+          "description": "List of hex colours used by the effect."
+        }
+      }
+    },
+    "effect": {
+      "name": "Set effect",
+      "description": "Start an effect with an optional palette and speed.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "Leave empty to control every device."
+        },
+        "effect": {
+          "name": "Effect"
+        },
+        "speed": {
+          "name": "Effect speed"
+        },
+        "palette": {
+          "name": "Palette"
+        }
+      }
+    },
+    "scene": {
+      "name": "Apply scene",
+      "description": "Apply a palette + effect preset to every device.",
+      "fields": {
+        "scene": {
+          "name": "Scene"
+        }
+      }
+    },
+    "audio_level": {
+      "name": "Push audio level",
+      "description": "Feed an audio level (0-1) from a microphone, ESPHome sensor or browser analyser.",
+      "fields": {
+        "level": {
+          "name": "Level",
+          "description": "0 to 1."
+        },
+        "bands": {
+          "name": "Bands",
+          "description": "Optional 48-band spectrum."
+        }
+      }
+    },
+    "cue": {
+      "name": "Play feedback beep",
+      "description": "Play the confirmation beep on the configured media player."
+    },
+    "identify": {
+      "name": "Identify device",
+      "description": "Flash a device white so you can find it.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "Leave empty to flash every device."
+        }
+      }
+    },
+    "ping": {
+      "name": "Refresh availability",
+      "description": "Probe every device and refresh the online counters."
+    }
+  }
+}

@@ -1,0 +1,152 @@
+apply:
+  name: 应用灯光状态
+  description: 对单盏灯或全部灯设置开关、亮度、颜色或灯效。
+  fields:
+    device_id:
+      name: 设备
+      description: 留空表示控制全部设备。
+      selector:
+        device:
+          integration: rgb_sync
+    on:
+      name: 开关
+      selector:
+        boolean:
+    brightness:
+      name: 亮度
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+    rgb_color:
+      name: RGB 颜色
+      selector:
+        color_rgb:
+    hex_color:
+      name: 十六进制颜色
+      selector:
+        text:
+    effect:
+      name: 灯效
+      selector:
+        select:
+          options:
+            - 固定
+            - 呼吸
+            - 彩虹
+            - 追光
+            - 烛光
+            - 频闪
+            - 极光
+            - 声控脉冲
+            - 电平条
+            - 星火
+            - 渐变
+    speed:
+      name: 灯效速度
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: slider
+    palette:
+      name: 配色
+      selector:
+        object:
+
+effect:
+  name: 设置灯效
+  description: 按指定配色与速度启动一个灯效。
+  fields:
+    device_id:
+      name: 设备
+      selector:
+        device:
+          integration: rgb_sync
+    effect:
+      name: 灯效
+      required: true
+      selector:
+        select:
+          options:
+            - 固定
+            - 呼吸
+            - 彩虹
+            - 追光
+            - 烛光
+            - 频闪
+            - 极光
+            - 声控脉冲
+            - 电平条
+            - 星火
+            - 渐变
+    speed:
+      name: 灯效速度
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: slider
+    palette:
+      name: 配色
+      selector:
+        object:
+
+scene:
+  name: 应用场景
+  description: 把配色与灯效预设应用到全部设备。
+  fields:
+    scene:
+      name: 场景
+      required: true
+      selector:
+        select:
+          options:
+            - 关闭
+            - 暖白
+            - 冷白
+            - 日落
+            - 极光
+            - 烛光
+            - 派对
+            - 电影之夜
+            - 赛博朋克
+            - 冰蓝
+            - 阅读
+
+audio_level:
+  name: 推送音量电平
+  description: 从麦克风、ESPHome 传感器或浏览器分析器送入 0-1 的电平。
+  fields:
+    level:
+      name: 电平
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 1
+          step: 0.01
+          mode: slider
+    bands:
+      name: 频谱
+      selector:
+        object:
+
+cue:
+  name: 播放提示音
+  description: 在已配置的媒体播放器上播放确认音。
+
+identify:
+  name: 定位设备
+  description: 让设备闪白，便于找到它。
+  fields:
+    device_id:
+      name: 设备
+      selector:
+        device:
+          integration: rgb_sync
+
+ping:
+  name: 刷新在线状态
+  description: 探测全部设备并刷新在线计数。
