@@ -183,17 +183,20 @@ def wled_candidate(service_name: str, addresses: list[str], port: int) -> dict[s
 async def async_zeroconf_candidates(
     hass: HomeAssistant, timeout: float = DEFAULT_SCAN_SECONDS
 ) -> list[dict[str, Any]]:
-    """Browse ``_wled._tcp.local.`` for WLED controllers."""
+    """Browse ``_wled._tcp.local.`` for WLED controllers.
+
+    A short-lived standalone zeroconf instance is used so discovery works even
+    when the Home Assistant ``zeroconf`` integration is not loaded.
+    """
     try:
-        from homeassistant.components.zeroconf import async_get_async_instance
         from zeroconf import ServiceStateChange
-        from zeroconf.asyncio import AsyncServiceBrowser, AsyncServiceInfo
-    except ImportError:  # pragma: no cover - both are core dependencies
+        from zeroconf.asyncio import AsyncServiceBrowser, AsyncServiceInfo, AsyncZeroconf
+    except ImportError:  # pragma: no cover - shipped with Home Assistant
         return []
 
     try:
-        aiozc = await async_get_async_instance(hass)
-    except (AttributeError, RuntimeError, KeyError):  # pragma: no cover
+        aiozc = AsyncZeroconf()
+    except (AttributeError, RuntimeError, OSError):  # pragma: no cover - no network
         return []
 
     found: dict[str, None] = {}
@@ -206,7 +209,7 @@ async def async_zeroconf_candidates(
     try:
         browser = AsyncServiceBrowser(aiozc.zeroconf, WLED_ZEROCONF_TYPE, handlers=[_handler])
         await asyncio.sleep(timeout)
-    except (AttributeError, RuntimeError, TypeError):  # pragma: no cover - no zeroconf
+    except (AttributeError, RuntimeError, TypeError):  # pragma: no cover - no mdns
         return []
     finally:
         if browser is not None:
@@ -214,6 +217,10 @@ async def async_zeroconf_candidates(
                 await browser.async_cancel()
             except (RuntimeError, TypeError):  # pragma: no cover
                 pass
+        try:
+            await aiozc.async_close()
+        except (RuntimeError, TypeError):  # pragma: no cover
+            pass
 
     candidates: list[dict[str, Any]] = []
     for name in found:
@@ -296,22 +303,20 @@ async def async_add_to_entry(
 
 @callback
 def async_register_bluetooth_listener(hass: HomeAssistant, entry: Any) -> Any:
-    """Auto-add BLE controllers that show up after the hub is running."""
+    """Auto-add BLE controllers that show up after the hub is running.
+
+    The bluetooth integration is only an ``after_dependency``: it can be absent,
+    still retrying (no adapter) or loaded later. Register immediately when it is
+    ready, otherwise wait for the component-loaded event once.
+    """
     if not entry.options.get(CONF_AUTO_ADD, entry.data.get(CONF_AUTO_ADD, True)):
         return None
-    if "bluetooth" not in hass.config.components:
-        return None
-    try:
-        from homeassistant.components import bluetooth
-        from homeassistant.components.bluetooth import BluetoothScanningMode
-        from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
-    except ImportError:  # pragma: no cover - bluetooth is a built-in
-        return None
 
-    matcher = BluetoothCallbackMatcher(
-        {"connectable": True, "service_uuid": DEFAULT_BLE_SERVICE_UUID}
-    )
+    from homeassistant.const import EVENT_COMPONENT_LOADED
+
     pending: set[str] = hass.data.setdefault(DOMAIN, {}).setdefault("discovery_pending", set())
+    unsubs: list[Any] = []
+    state: dict[str, bool] = {"registered": False}
 
     @callback
     def _handle(service_info: Any, change: Any) -> None:
@@ -330,12 +335,44 @@ def async_register_bluetooth_listener(hass: HomeAssistant, entry: Any) -> Any:
         finally:
             seen.discard(str(candidate.get(CONF_ADDRESS, "")))
 
-    try:
-        return bluetooth.async_register_callback(
-            hass, matcher, _handle, BluetoothScanningMode.ACTIVE
+    @callback
+    def _register() -> None:
+        if state["registered"] or "bluetooth" not in hass.config.components:
+            return
+        try:
+            from homeassistant.components import bluetooth
+            from homeassistant.components.bluetooth import BluetoothScanningMode
+            from homeassistant.components.bluetooth.match import BluetoothCallbackMatcher
+        except ImportError:  # pragma: no cover - bluetooth is a built-in
+            return
+        matcher = BluetoothCallbackMatcher(
+            {"connectable": True, "service_uuid": DEFAULT_BLE_SERVICE_UUID}
         )
-    except (AttributeError, TypeError, ValueError):  # pragma: no cover - older core
-        return None
+        try:
+            unsub = bluetooth.async_register_callback(
+                hass, matcher, _handle, BluetoothScanningMode.ACTIVE
+            )
+        except (AttributeError, TypeError, ValueError, RuntimeError):  # pragma: no cover
+            return
+        state["registered"] = True
+        unsubs.append(unsub)
+
+    _register()
+
+    @callback
+    def _on_component_loaded(event: Any) -> None:
+        if event.data.get("component") == "bluetooth":
+            _register()
+
+    remove_listener = hass.bus.async_listen(EVENT_COMPONENT_LOADED, _on_component_loaded)
+
+    @callback
+    def _unsub_all() -> None:
+        remove_listener()
+        while unsubs:
+            unsubs.pop()()
+
+    return _unsub_all
 
 
 __all__ = [

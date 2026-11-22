@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "rgb_sync"
 NAME: Final = "RGB Sync"
-VERSION: Final = "1.0.4"
+VERSION: Final = "1.0.5"
 
 PLATFORMS: Final = ["button", "light", "number", "select", "sensor", "switch"]
 

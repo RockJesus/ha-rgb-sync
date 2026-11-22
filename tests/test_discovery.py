@@ -151,8 +151,21 @@ async def test_async_add_to_entry_appends_devices(hass):
     assert len(stored.options[CONF_DEVICES]) == 1
 
 
-async def test_bluetooth_listener_skipped_without_bluetooth(hass):
+async def test_bluetooth_listener_defers_without_bluetooth(hass):
+    from homeassistant.const import EVENT_COMPONENT_LOADED
+
     entry = _hub_entry()
+    entry.add_to_hass(hass)
+    unsub = discovery.async_register_bluetooth_listener(hass, entry)
+    assert callable(unsub)
+    # No bluetooth component: the listener waits instead of failing.
+    hass.bus.async_fire(EVENT_COMPONENT_LOADED, {"component": "bluetooth"})
+    await hass.async_block_till_done()
+    unsub()
+
+
+async def test_bluetooth_listener_respects_auto_add_off(hass):
+    entry = _hub_entry(**{CONF_AUTO_ADD: False})
     entry.add_to_hass(hass)
     assert discovery.async_register_bluetooth_listener(hass, entry) is None
 
